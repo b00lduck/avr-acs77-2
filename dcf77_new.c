@@ -124,9 +124,11 @@ void init_dcf() {
 /**********************************************************/
 void welcome_gong() {
 /**********************************************************/
-	SBI(PORTA,2);
+	gong_on();
+	aux1_on();
 	delayloop16(3000);
-	CBI(PORTA,2);
+	gong_off();
+	aux1_off();
 }
 
 /**********************************************************/
@@ -213,6 +215,50 @@ void calculate_utc() {
 }
 
 
+void check_old_gong(struct time* gongtime) {
+
+	if (gongtime->mm == 0) {
+		char gong = gongtime->hh;
+		if (gong > 12) gong -= 12;
+		if (gong == 0) gong = 12;
+		if (((gongtime->ss % settings[SETTING_GONG_INTERVAL]) == 0) && (gongtime->ss < (gong*settings[SETTING_GONG_INTERVAL]))) {
+			gong_on();
+		} else {
+			gong_off();
+		}
+	} else {
+	  gong_off();
+	}
+
+}
+
+char big_ben_chiming = 0;
+
+void check_new_gong(struct time* gongtime) {
+
+	if ((big_ben_chiming == 0) && (gongtime->ss == 0)) {
+
+		big_ben_chiming = 1;
+
+		char gong = gongtime->hh;
+		if (gong > 12) gong -= 12;
+		if (gong == 0) gong = 12;
+
+		aux2_on();
+		delayloop16(5000);
+		aux2_off();
+
+	} else {
+		aux2_off();
+	}
+
+	if (gongtime->ss == 20) {
+		big_ben_chiming = 0;
+	}
+
+}
+
+
 
 /**********************************************************/
 void check_gong() {
@@ -234,22 +280,18 @@ void check_gong() {
 	}
 
 	if (gongtime) {
-		if (gongtime->mm == 0) {
-			char gong = gongtime->hh;
-			if (gong > 12) gong -= 12;
-			if (gong == 0) gong = 12;
-			if (((gongtime->ss % settings[SETTING_GONG_INTERVAL]) == 0) && (gongtime->ss < (gong*settings[SETTING_GONG_INTERVAL]))) {
-				SBI(PORTA,2);
-			} else {
-				CBI(PORTA,2);
-			}
-		} else {
-		  CBI(PORTA,2);		
-		}
+
+		// old gong
+
+		check_old_gong(gongtime);
+		check_new_gong(gongtime);
+
 	} else {
-	  CBI(PORTA,2);		
+	  gong_off();		
 	}
 }
+
+
 
 /***************************************************/
 void do_dcf77() {

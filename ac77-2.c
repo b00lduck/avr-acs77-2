@@ -8,9 +8,6 @@ void init_avr();
 char buttona_pushed = 0;
 char buttonb_pushed = 0;
 
-
-
-
 /***************************************************************************/
 int main() {
 /***************************************************************************/
@@ -50,7 +47,7 @@ int main() {
 
 
 		if (valid_time) check_gong();
-		else CBI(PORTA,2);		
+		else gong_off();		
 
 	}
 }

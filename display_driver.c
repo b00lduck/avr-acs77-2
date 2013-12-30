@@ -437,15 +437,11 @@ inline void display_menu() {
 
 		default:
 
-
-
 			break;
 
 	}
 			
-
 }
-
 
 /**********************************************************/
 void init_display() {

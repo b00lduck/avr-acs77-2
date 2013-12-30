@@ -20,3 +20,42 @@ inline void delayloop16 (uint16_t count);
 #define CBI(port,bit) port &= ~(1<<bit)
 #define NOP asm volatile ("nop");
 
+static inline void gong_on() {
+	SBI(PORTB,4);
+}
+
+static inline void gong_off() {
+	CBI(PORTB,4);
+}
+
+static inline void aux1_on() {
+	SBI(PORTA,6);
+}
+
+static inline void aux1_off() {
+	CBI(PORTA,6);
+}
+
+static inline void aux2_on() {
+	SBI(PORTA,5);
+}
+
+static inline void aux2_off() {
+	CBI(PORTA,5);
+}
+
+static inline void aux3_on() {
+	SBI(PORTA,4);
+}
+
+static inline void aux3_off() {
+	CBI(PORTA,4);
+}
+
+static inline void aux4_on() {
+	SBI(PORTA,2);
+}
+
+static inline void aux4_off() {
+	CBI(PORTA,2);
+}
