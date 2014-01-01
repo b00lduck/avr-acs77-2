@@ -12,14 +12,36 @@ char buttonb_pushed = 0;
 int main() {
 /***************************************************************************/
 
-	load_settings();
+	init_avr();	
+	
+/*	
+// PORT TESTING CODE
+char i;
+	while(1) {	
+		for(i=0; i<100; i++) {
+			delayloop16(50000);
+		}
+		aux4_on();
+		led_on();
 
-	init_avr();
-	init_dcf();
+		for(i=0; i<100; i++) {
+			delayloop16(50000);
+		}
+		aux4_off();
+		led_off();
+	}
+	*/
+			
 	init_display();
 	
-	if (settings[SETTING_WELCOMEGONG] == 1) welcome_gong();
-
+	settings[SETTING_DISPLAY_MODE] = DM_TEST;
+	settings[SETTING_BRIGHTNESS] = 10;
+	
+	welcome_gong();	
+	
+	load_settings();	
+	init_dcf();	
+		
 	while (1) {
 
 		if (((PINA & 0b00000010) == 0)) {
@@ -46,8 +68,15 @@ int main() {
 		}
 
 
-		if (valid_time) check_gong();
-		else gong_off();		
+		if (valid_time) {
+			check_gong();
+		} else {
+			gong_off();		
+			aux1_off();
+			aux2_off();
+			aux3_off();
+			aux4_off();
+		}
 
 	}
 }

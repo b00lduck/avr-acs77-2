@@ -59,3 +59,11 @@ static inline void aux4_on() {
 static inline void aux4_off() {
 	CBI(PORTA,2);
 }
+
+static inline void led_on() {
+	SBI(PORTA,3);
+}
+
+static inline void led_off() {
+	CBI(PORTA,3);
+}

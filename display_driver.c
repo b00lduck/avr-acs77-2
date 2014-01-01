@@ -55,6 +55,7 @@ char segcode[] = { 0b00111111,	// 0
 				   0b01100011, // ° 38
 				   0b00110111, // "N" 39
 				   0b00110000, // "I" 40
+				   0b01111111  // all on 41
 };
 
 
@@ -91,8 +92,8 @@ inline char get_segment_status(char digit, char segment) {
 inline void show_led() {
 /***************************************************************************/
 	// DCF-77 LED
-	if (PIND & (1<<PD2)) SBI(PORTA,3);
-	else CBI(PORTA,3);
+	if (PIND & (1<<PD2)) led_on();
+	else led_off();
 }
 
 /***************************************************************************/
@@ -107,6 +108,7 @@ inline void show_display() {
 			case DM_DCF: 	display_mode0(); break;
 			case DM_UTC: 	display_mode1(); break;
 			case DM_EPOCH: 	display_mode2(); break;
+			case DM_TEST: 	display_mode3(); break;
 		}
 
 	} else {
@@ -145,8 +147,49 @@ inline void show_display() {
 
 }
 
+
 #define FIRST_DIG(val) (val / 10)
 #define SECOND_DIG(val) (val - (val / 10) * 10)
+
+inline void init_display_mode() {
+	
+	// ACS-77
+	if (!valid_secs) {
+		display[0] = 10;
+		display[1] = 12;
+		display[2] = 5;
+		display[3] = 36;
+		display[4] = 7;
+		display[5] = 7;
+		} else {
+		display[0] = 37;
+		display[1] = 37;
+		display[2] = 37;
+		display[3] = 37;
+		display[4] = FIRST_DIG(rx_bit_counter);
+		display[5] = SECOND_DIG(rx_bit_counter);
+	}
+
+	if (rx_bit_counter % 2) {
+		// NI2006
+		display[6] = 39;
+		display[7] = 40;
+		display[8] = 2;
+		display[9] = 0;
+		display[10] = 0;
+		display[11] = 6;
+	} else {
+		display[6] = 39;
+		display[7] = 40;
+		display[8] = 2;
+		display[9] = 0;
+		display[10] = 1;
+		display[11] = 3;		
+	}
+	
+}
+
+
 
 /***************************************************************************/
 inline void display_mode0() {
@@ -154,7 +197,7 @@ inline void display_mode0() {
 	// Original ACS-77
 
 	memset(display_dp,0,12);
-
+	
 	if (valid_time) {
 		display[0] = FIRST_DIG(dcf77.hh);
 		display[1] = SECOND_DIG(dcf77.hh);	
@@ -177,30 +220,9 @@ inline void display_mode0() {
 			display_dp[11] = 1;
 		}
 	} else {
-		// ACS-77
-		if (!valid_secs) {
-			display[0] = 10;
-			display[1] = 12;	
-			display[2] = 5;
-			display[3] = 36;
-			display[4] = 7;
-			display[5] = 7;
-		} else {
-			display[0] = 37;
-			display[1] = 37;	
-			display[2] = 37;
-			display[3] = 37;
-			display[4] = FIRST_DIG(rx_bit_counter);
-			display[5] = SECOND_DIG(rx_bit_counter);
-		}
-
-		// NI2006
-		display[6] = 39;
-		display[7] = 40;
-		display[8] = 2;
-		display[9] = 0;
-		display[10] = 0;
-		display[11] = 6;		
+		
+		init_display_mode();
+		
 	}
 }
 
@@ -236,32 +258,8 @@ inline void display_mode1() {
 			display_dp[11] = 1;
 		}
 	} else {
-		// ACS-77
-		if (!valid_secs) {
-			display[0] = 10;
-			display[1] = 12;	
-			display[2] = 5;
-			display[3] = 36;
-			display[4] = 7;
-			display[5] = 7;
-		} else {
-			display[0] = 37;
-			display[1] = 37;	
-			display[2] = 37;
-			display[3] = 37;
-			display[4] = FIRST_DIG(rx_bit_counter);
-			display[5] = SECOND_DIG(rx_bit_counter);
-		}
-
-		// NI2006
-		display[6] = 39;
-		display[7] = 40;
-		display[8] = 2;
-		display[9] = 0;
-		display[10] = 0;
-		display[11] = 6;		
+		init_display_mode();
 	}
-
 }
 
 
@@ -296,33 +294,18 @@ inline void display_mode2() {
 		display[11] = temp1;
 
 	} else {
-		// ACS-77
-		if (!valid_secs) {
-			display[0] = 10;
-			display[1] = 12;	
-			display[2] = 5;
-			display[3] = 36;
-			display[4] = 7;
-			display[5] = 7;
-		} else {
-			display[0] = 37;
-			display[1] = 37;	
-			display[2] = 37;
-			display[3] = 37;
-			display[4] = FIRST_DIG(rx_bit_counter);
-			display[5] = SECOND_DIG(rx_bit_counter);
-		}
-
-		// NI2006
-		display[6] = 39;
-		display[7] = 40;
-		display[8] = 2;
-		display[9] = 0;
-		display[10] = 0;
-		display[11] = 6;		
+		init_display_mode();
 	}
 }
 
+
+/***************************************************************************/
+inline void display_mode3() {
+/***************************************************************************/
+	// SEGMENT TEST
+	memset(display_dp,1,12);
+	memset(display,41,12);
+}
 
 /***************************************************************************/
 inline void display_menu() {
@@ -332,16 +315,14 @@ inline void display_menu() {
 	memset(display_dp,0,12);
 	memset(display,37,12);
 
-
 	switch(mode-1) {
 		
-		case SETTING_DISPLAY_MODE:	// SETTING_DISPLAY_MODE
+		case SETTING_DISPLAY_MODE:
 			
 			display[0] = 13;
 			display[1] = 18;	
 			display[2] = 5;
 			display[3] = 25;
-
 
 			switch(settings[SETTING_DISPLAY_MODE]) {
 				
@@ -368,62 +349,55 @@ inline void display_menu() {
 					display[10] = 12;
 					display[11] = 17;		
 					break;
+					
+
+				case DM_TEST:
+
+					display[6] = 29;
+					display[7] = 14;
+					display[8] = 5;
+					display[9] = 29;
+					break;					
 
 			}
-		break;
-
-		case SETTING_GONG_INTERVAL:	// SETTING_GONG_INTERVAL
-			
-			display[0] = 16;
-			display[1] = 24;	
-			display[2] = 23;
-			display[3] = 36;
-			display[4] = 18;
-			display[5] = 23;
-
-			display[7] = settings[SETTING_GONG_INTERVAL];
-			display[9] = 5;
-			display[10] = 14;
-			display[11] = 12;		
 			break;
 		
-		case SETTING_GONG_ENABLE:	// SETTING_GONG_ENABLE
+		case SETTING_GONG_MODE:
 			
 			display[0] = 16;
 			display[1] = 24;
 			display[2] = 23;
 			display[3] = 16;	
 
-			if ( settings[SETTING_GONG_ENABLE] ) {
-				display[10] = 24;
-				display[11] = 23;		
-			} else {
-				display[9] = 24;
-				display[10] = 15;		
-				display[11] = 15;		
+			switch(settings[SETTING_GONG_MODE]) {
+				
+				case GM_OFF:
+					display[9] = 24;
+					display[10] = 15;
+					display[11] = 15;
+					break;
+					
+				case GM_OLD:
+					display[9] = 24;
+					display[10] = 21;
+					display[11] = 13;					
+					break;;					
+
+				case GM_BEN:
+					display[9] = 11;
+					display[10] = 14;
+					display[11] = 23;				
+					break;;
+
+				case GM_CUCK:
+					display[9] = 12;
+					display[10] = 30;
+					display[11] = 12;				
+					break;;								
 			}
 			break;
 		
-		case SETTING_WELCOMEGONG:	// SETTING_WELCOMEGONG
-			
-			display[0] = 24;
-			display[1] = 23;
-			display[2] = 16;
-			display[3] = 24;	
-			display[4] = 23;
-			display[5] = 16;
-
-			if ( settings[SETTING_WELCOMEGONG] ) {
-				display[10] = 24;
-				display[11] = 23;		
-			} else {
-				display[9] = 24;
-				display[10] = 15;		
-				display[11] = 15;		
-			}
-			break;
-
-		case SETTING_BRIGHTNESS: // SETTING_BRIGHTNESS
+		case SETTING_BRIGHTNESS:
 
 			display[0] = 11;
 			display[1] = 27;
@@ -434,6 +408,34 @@ inline void display_menu() {
 			
 			display[10] = FIRST_DIG(settings[SETTING_BRIGHTNESS]);
 			display[11] = SECOND_DIG(settings[SETTING_BRIGHTNESS]);
+			break;
+			
+		case SETTING_QUIET_START:
+
+			display[0] = 23;
+			display[1] = 18;
+			display[2] = 16;
+			display[3] = 37;
+			display[4] = 15;
+			display[5] = 27;
+		
+			display[10] = FIRST_DIG(settings[SETTING_QUIET_START]);
+			display[11] = SECOND_DIG(settings[SETTING_QUIET_START]);
+			break;
+			
+		case SETTING_QUIET_END:
+
+			display[0] = 23;
+			display[1] = 18;
+			display[2] = 16;
+			display[3] = 37;
+			display[4] = 29;
+			display[5] = 24;
+		
+			display[10] = FIRST_DIG(settings[SETTING_QUIET_END]);
+			display[11] = SECOND_DIG(settings[SETTING_QUIET_END]);
+			break;
+					
 
 		default:
 
