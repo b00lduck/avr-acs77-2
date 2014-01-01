@@ -333,7 +333,7 @@ void process_gong_cuck(struct time* gongtime) {
 		gong --;
 	
 		// number of played cuckoo hits is determined here. 
-		if (sec > (gong * GONG_CUCK_INTERVAL)) {
+		if (sec >= (gong * GONG_CUCK_INTERVAL)) {
 			aux3_off();
 			aux4_off();
 			
@@ -410,12 +410,12 @@ void check_gong() {
 		// quiet hours		
 		if (qui_from > qui_to) {
 			// i.e. 23 to 6			
-			if ((gongtime->hh > qui_from) || (gongtime->hh < qui_to)) {
+			if ((gongtime->hh >= qui_from) || (gongtime->hh <= qui_to)) {
 				return;
 			}			
 		} else {			
 			//i.e. 0 to 6
-			if ((gongtime->hh > qui_from) && (gongtime->hh < qui_to)) {
+			if ((gongtime->hh >= qui_from) && (gongtime->hh <= qui_to)) {
 				return;
 			}
 		}

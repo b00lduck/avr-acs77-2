@@ -184,7 +184,7 @@ inline void init_display_mode() {
 		display[8] = 2;
 		display[9] = 0;
 		display[10] = 1;
-		display[11] = 3;		
+		display[11] = 4;		
 	}
 	
 }
