@@ -119,10 +119,11 @@ void init_dcf() {
 
 	sei();
 	
-	//dcf77.mm = 59;
-	//dcf77.ss = 55;
-	//dcf77.hh = 11;
-	
+	/*
+		dcf77.mm = 59;
+		dcf77.ss = 57;
+		dcf77.hh = 11;	
+	*/
 
 }
 
@@ -227,7 +228,9 @@ void calculate_utc() {
 
 }
 
-
+/************************************************************************/
+/*                                                                      */
+/************************************************************************/
 void process_old_gong(struct time* gongtime) {
 
 	if (gongtime->mm == 0) {
@@ -246,6 +249,9 @@ void process_old_gong(struct time* gongtime) {
 
 }
 
+/************************************************************************/
+/*                                                                      */
+/************************************************************************/
 void process_gong_ben(struct time* gongtime) {
 
 		char sec = gongtime->ss;
@@ -314,6 +320,9 @@ void process_gong_ben(struct time* gongtime) {
 
 }
 
+/************************************************************************/
+/*                                                                      */
+/************************************************************************/
 void process_gong_cuck(struct time* gongtime) {
 
 	char sec = gongtime->ss;
@@ -330,13 +339,9 @@ void process_gong_cuck(struct time* gongtime) {
 		if (gong > 12) gong -= 12;
 		if (gong == 0) gong = 12;
 		
-		gong --;
-	
-		// number of played cuckoo hits is determined here. 
+		// After the chuckoo ply the melody.
 		if (sec >= (gong * GONG_CUCK_INTERVAL)) {
-			aux3_off();
-			aux4_off();
-			
+								
 			if (sec > (gong * GONG_CUCK_INTERVAL) + 3) {
 				aux3_off();
 				aux4_off();
@@ -360,35 +365,45 @@ void process_gong_cuck(struct time* gongtime) {
 		const char modulo = GONG_CUCK_INTERVAL * 2;
 
 		// CH1
-		if ((rise_sec_even % modulo) == 0) {
-			aux3_on();
+		if ((rise_sec_even % modulo) == 0) {			
+			char my_gongnum = (sec + 1) / GONG_CUCK_INTERVAL + 1; 		
+			if (my_gongnum <= gong) {
+				aux3_on();
+			}
 		}
 
 		if ((fall_sec_even % modulo) == 0) {
-			aux3_off();
+			char my_gongnum = (sec + 1) / GONG_CUCK_INTERVAL;			
+			if (my_gongnum <= gong) {
+				aux3_off();
+			}
 		}
 		
 		// CH2
 		if ((rise_sec_odd % modulo) == 0) {
-			aux4_on();
+			char my_gongnum = (sec + 1) / GONG_CUCK_INTERVAL;
+			if (my_gongnum <= gong) {			
+				aux4_on();
+			}
 		}
 
 		if ((fall_sec_odd % modulo) == 0) {
-			aux4_off();
+			char my_gongnum = (sec + 1) / GONG_CUCK_INTERVAL - 1;
+			if (my_gongnum <= gong) {			
+				aux4_off();
+			}
 		}
 		
 	}
 
 }
 
-
-
 /**********************************************************/
 void check_gong() {
 /**********************************************************/
 
 	struct time* gongtime;
-	
+		
 	switch (settings[SETTING_DISPLAY_MODE]) {
 	
 		case DM_UTC:
@@ -407,15 +422,25 @@ void check_gong() {
 		char qui_from = settings[SETTING_QUIET_START];
 		char qui_to = settings[SETTING_QUIET_END];
 		
-		// quiet hours		
+		// quiet hours	
+		// TODO: sec 59 of the prior hour has also to be blocked
+	
+		char qh_h = gongtime->hh;	
+	
+		// treat minutes 55 to 59 to next hour to mute rising edge
+		if (gongtime->mm >= 55) {
+			qh_h++;
+			if (qh_h == 24) qh_h = 0;
+		}				
+	
 		if (qui_from > qui_to) {
 			// i.e. 23 to 6			
-			if ((gongtime->hh >= qui_from) || (gongtime->hh <= qui_to)) {
+			if ((qh_h >= qui_from) || (qh_h <= qui_to)) {
 				return;
 			}			
 		} else {			
-			//i.e. 0 to 6
-			if ((gongtime->hh >= qui_from) && (gongtime->hh <= qui_to)) {
+			//i.e. 0 to 6		
+			if ((qh_h >= qui_from) && (qh_h <= qui_to)) {
 				return;
 			}
 		}
