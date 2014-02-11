@@ -13,24 +13,6 @@ int main() {
 /***************************************************************************/
 
 	init_avr();	
-	
-/*	
-// PORT TESTING CODE
-char i;
-	while(1) {	
-		for(i=0; i<100; i++) {
-			delayloop16(50000);
-		}
-		aux4_on();
-		led_on();
-
-		for(i=0; i<100; i++) {
-			delayloop16(50000);
-		}
-		aux4_off();
-		led_off();
-	}
-	*/
 			
 	init_display();
 	

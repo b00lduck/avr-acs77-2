@@ -11,8 +11,9 @@ volatile uint32_t y2k_timestamp = 0;  // Sekunden seit 1.1.2000 GMT
 volatile uint8_t rx_bit_counter = 0;  //Bitzähler für RX Bit
 unsigned long long dcf_rx_buffer = 0; //64 Bit für DCF77 benötigt werden 59 Bits
 
-//Hilfs Sekunden Counter
+// Hilfs Sekunden Counter
 unsigned int h_dcf77_ss = 0;
+
 uint8_t	dcf_data_ready = 0;
 
 /**********************************************************/
@@ -42,12 +43,14 @@ ISR(INT0_vect) {
 
 		//Auslesen der Pulsweite von ansteigender Flanke zu abfallender Flanke
 		uint16_t pulse_wide = TCNT1;
+		
 		//Zurücksetzen des Timers
 		TCNT1 = 65535 - (SYSCLK / 1024);
+		
 		//Sekunden Hilfs Counter berechnen
 		h_dcf77_ss = h_dcf77_ss + pulse_wide - (65535 - (SYSCLK / 1024));
-		//Parity speichern
-		//beginn von Bereich P1/P2/P3
+		
+		//Parity speichern / Beginn von Bereich P1/P2/P3
 		if (rx_bit_counter == 21 || rx_bit_counter ==  29 || rx_bit_counter ==  36) {
 			flags.parity_err = 0;
 		}
@@ -63,9 +66,11 @@ ISR(INT0_vect) {
 			flags.parity_err = flags.parity_err ^ 1; //Toggel Hilfs Parity
 		}
 		
-		MCUCR = INT0_RISING_EDGE;	//Nächster Interrupt wird ausgelöst bei ansteigender Flanke
+		// Nächster Interrupt wird ausgelöst bei ansteigender Flanke
+		MCUCR = INT0_RISING_EDGE;
 		
-		rx_bit_counter++;	//RX Bit Counter wird um 1 incrementiert
+		// RX Bit Counter wird um 1 incrementiert
+		rx_bit_counter++;
 
 	}
 }								
@@ -118,13 +123,10 @@ void init_dcf() {
 	TCNT1 = 65535 - (SYSCLK / 1024);		// Timer Preset
 
 	sei();
-	
-	/*
-		dcf77.mm = 59;
-		dcf77.ss = 57;
-		dcf77.hh = 11;	
-	*/
 
+	//dcf77.mm = 59;
+	//dcf77.ss = 56;
+	//dcf77.hh = 13;	
 }
 
 /**********************************************************/
@@ -249,19 +251,19 @@ void process_old_gong(struct time* gongtime) {
 
 }
 
-/************************************************************************/
-/*                                                                      */
-/************************************************************************/
+
+#define TCNT_RISE 1000
+
 void process_gong_ben(struct time* gongtime) {
 
-		char sec = gongtime->ss;
+	char sec = gongtime->ss;
 
 	if (gongtime->mm == 59) {
 
 		// Start the chime melody on falling edge
 		// rising edge at 57, falling at 0
 		// CH2 LONG
-		if (((sec == 57) && (TCNT1 > 58000)) || (sec >= 58)) {
+		if (((sec == 57) && (h_dcf77_ss > TCNT_RISE)) || (sec >= 58)) {
 			aux2_on();
 			return;
 		}
@@ -280,39 +282,39 @@ void process_gong_ben(struct time* gongtime) {
 
 		// number of played ben hits is determined here. The Big Ben starts at BIG_BEN_OFFSET. One Big Ben hit is 3 seconds.
 		// If actual seconds is larger than BIG_BEN_OFFSET + (hour * 3) do nothing.
-		if (sec >= (GONG_BEN_CHIMELEN + (gong * GONG_BEN_INTERVAL))) {
+		if (sec >= (GONG_BEN_CHIMELEN + (gong * GONG_BEN_INTERVAL)) + 1) {
 			aux1_off();
 			aux2_off();
 			return;
 		}
 		
-		const char rise_sec_even = sec - GONG_BEN_CHIMELEN;
-		const char fall_sec_even = sec - GONG_BEN_CHIMELEN - 1;
+		const char rise_sec_odd = sec - GONG_BEN_CHIMELEN;
+		const char fall_sec_odd = sec - GONG_BEN_CHIMELEN - 1;
 	
-		const char rise_sec_odd = sec - GONG_BEN_CHIMELEN - GONG_BEN_INTERVAL;
-		const char fall_sec_odd = sec - GONG_BEN_CHIMELEN - GONG_BEN_INTERVAL - 1;	
+		const char rise_sec_even = sec - GONG_BEN_CHIMELEN - GONG_BEN_INTERVAL;
+		const char fall_sec_even = sec - GONG_BEN_CHIMELEN - GONG_BEN_INTERVAL - 1;	
 		
 		const char modulo = GONG_BEN_INTERVAL * 2;
 
 		// CH1
-		if ((rise_sec_even % modulo) == 0) {
-			aux1_on();
-			return;
-		}
-
-		if ((fall_sec_even % modulo) == 0) {
-			aux1_off();
-			return;
-		}
-	
-		// CH2
-		if ((rise_sec_odd % modulo) == 0) {
+		if (((rise_sec_even % modulo) == 0) && (h_dcf77_ss > TCNT_RISE)) {
 			aux2_on();
 			return;
 		}
 
-		if ((fall_sec_odd % modulo) == 0) {
+		if ((fall_sec_even % modulo) == 0) {
 			aux2_off();
+			return;
+		}
+	
+		// CH2
+		if (((rise_sec_odd % modulo) == 0) && (h_dcf77_ss > TCNT_RISE)) {
+			aux1_on();
+			return;
+		}
+
+		if ((fall_sec_odd % modulo) == 0) {
+			aux1_off();
 			return;
 		}
 	
@@ -320,15 +322,13 @@ void process_gong_ben(struct time* gongtime) {
 
 }
 
-/************************************************************************/
-/*                                                                      */
-/************************************************************************/
+
 void process_gong_cuck(struct time* gongtime) {
 
 	char sec = gongtime->ss;
 	
 	// rising edge at 59, falling at 0		
-	if ((gongtime->mm == 59) && (sec == 59)) {
+	if ((gongtime->mm == 59) && (sec == 59) && (h_dcf77_ss > TCNT_RISE)) {
 
 		aux3_on();
 		return;
@@ -338,61 +338,64 @@ void process_gong_cuck(struct time* gongtime) {
 		char gong = gongtime->hh;
 		if (gong > 12) gong -= 12;
 		if (gong == 0) gong = 12;
+			
+		if (sec < (gong * GONG_CUCK_INTERVAL)) {
 		
-		// After the chuckoo ply the melody.
+			const char rise_sec_even = sec + 1;
+			const char fall_sec_even = sec;
+		
+			const char rise_sec_odd = sec - GONG_CUCK_INTERVAL + 1;
+			const char fall_sec_odd = sec - GONG_CUCK_INTERVAL;
+		
+			const char modulo = GONG_CUCK_INTERVAL * 2;
+
+			// CH1
+			if (((rise_sec_even % modulo) == 0) && (h_dcf77_ss > TCNT_RISE)) {			
+				char my_gongnum = (sec + 1) / GONG_CUCK_INTERVAL + 1; 		
+				if (my_gongnum <= gong) {
+					aux3_on();
+				}
+			}
+
+			if ((fall_sec_even % modulo) == 0) {
+				char my_gongnum = (sec + 1) / GONG_CUCK_INTERVAL;			
+				if (my_gongnum <= gong) {
+					aux3_off();
+				}
+			}
+		
+			// CH2
+			if (sec < (gong * GONG_CUCK_INTERVAL) - 1) {									
+				if (((rise_sec_odd % modulo) == 0) && (h_dcf77_ss > TCNT_RISE)) {
+					char my_gongnum = (sec + 1) / GONG_CUCK_INTERVAL;
+					if (my_gongnum <= gong) {			
+						aux4_on();
+					}
+				}
+			}
+
+			if ((fall_sec_odd % modulo) == 0) {
+				char my_gongnum = (sec + 1) / GONG_CUCK_INTERVAL - 1;
+				if (my_gongnum <= gong) {			
+					aux4_off();
+				}
+			}
+			return;
+		}
+		
+		// After the gong play the melody
 		if (sec >= (gong * GONG_CUCK_INTERVAL)) {
-								
-			if (sec > (gong * GONG_CUCK_INTERVAL) + 3) {
-				aux3_off();
-				aux4_off();
-			} else {
-				if (gongtime->hh == 12) {				
+			if (sec < (gong * GONG_CUCK_INTERVAL) + 4) {
+				if (gongtime->hh == 12) {
 					aux4_on();
 				} else {
 					aux3_on();
 				}
+			} else {
+				aux3_off();				
+				aux4_off();								
 			}
-			
-			return;
-		}
-		
-		const char rise_sec_even = sec + 1;
-		const char fall_sec_even = sec;
-		
-		const char rise_sec_odd = sec - GONG_CUCK_INTERVAL + 1;
-		const char fall_sec_odd = sec - GONG_CUCK_INTERVAL;
-		
-		const char modulo = GONG_CUCK_INTERVAL * 2;
-
-		// CH1
-		if ((rise_sec_even % modulo) == 0) {			
-			char my_gongnum = (sec + 1) / GONG_CUCK_INTERVAL + 1; 		
-			if (my_gongnum <= gong) {
-				aux3_on();
-			}
-		}
-
-		if ((fall_sec_even % modulo) == 0) {
-			char my_gongnum = (sec + 1) / GONG_CUCK_INTERVAL;			
-			if (my_gongnum <= gong) {
-				aux3_off();
-			}
-		}
-		
-		// CH2
-		if ((rise_sec_odd % modulo) == 0) {
-			char my_gongnum = (sec + 1) / GONG_CUCK_INTERVAL;
-			if (my_gongnum <= gong) {			
-				aux4_on();
-			}
-		}
-
-		if ((fall_sec_odd % modulo) == 0) {
-			char my_gongnum = (sec + 1) / GONG_CUCK_INTERVAL - 1;
-			if (my_gongnum <= gong) {			
-				aux4_off();
-			}
-		}
+		}		
 		
 	}
 
@@ -487,7 +490,6 @@ void do_dcf77() {
 	else dcf77_mesz = 0;
 
 	dcf_rx_buffer = 0;	//Löschen des Rx Buffers
-
 
 	valid_time = 1;
 	bad_signal = 0;
