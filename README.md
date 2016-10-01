@@ -22,4 +22,4 @@ BOM (incomplete):
 - 2x tactile button
 - optional: sound generator board for chime
 
-![Open source hardware](/oshw.svg?raw=true)
+![Open source hardware](/oshw.png)
