@@ -1,5 +1,7 @@
 # ACS77-2 DCF-77 clock based on ATmega32
 
+<img align="right" src="/oshw.png">
+
 A rebuild of the old "Renkforce ACS-77" with modern components.
 
 Built with AVR Studio 6.
@@ -22,4 +24,3 @@ BOM (incomplete):
 - 2x tactile button
 - optional: sound generator board for chime
 
-![Open source hardware](/oshw.png)
