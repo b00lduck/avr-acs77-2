@@ -22,4 +22,4 @@ BOM (incomplete):
 - 2x tactile button
 - optional: sound generator board for chime
 
-[[https://github.com/b00lduck/avr-acs77-2/blob/master/oshw.svg|Open source hardware]]
+[[https://raw.githubusercontent.com/b00lduck/avr-acs77-2/master/oshw.svg|Open source hardware]]
